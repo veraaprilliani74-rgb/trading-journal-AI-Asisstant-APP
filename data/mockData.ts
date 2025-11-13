@@ -197,21 +197,36 @@ mockMarketWatch.forEach(asset => {
     mockHistoricalData[asset.pair] = generateSparklineData(asset.price, asset.changePercent);
 });
 
-export const generateCandlestickData = (startPrice: number, numPoints = 120): CandlestickData[] => {
+const TIMEFRAME_SECONDS: Record<string, number> = {
+    '1m': 60,
+    '5m': 300,
+    '15m': 900,
+    '1H': 3600,
+    '4H': 14400,
+    '1D': 86400,
+};
+
+export const generateCandlestickData = (startPrice: number, numPoints = 200, timeframe: string): CandlestickData[] => {
     const data: CandlestickData[] = [];
     let lastClose = startPrice;
-    const today = new Date();
+    const timeDelta = TIMEFRAME_SECONDS[timeframe];
+    if (!timeDelta) return [];
+
+    const volatilityFactor = Math.sqrt(timeDelta / TIMEFRAME_SECONDS['1D']);
+    
+    const now = Math.floor(Date.now() / 1000);
+    let currentTime = now - (numPoints * timeDelta);
+    // Align to the start of the current interval
+    currentTime = Math.floor(currentTime / timeDelta) * timeDelta;
 
     for (let i = 0; i < numPoints; i++) {
-        const date = new Date(today);
-        date.setDate(today.getDate() - (numPoints - 1 - i));
-        const open = lastClose * (1 + (Math.random() - 0.5) * 0.01);
-        const close = open * (1 + (Math.random() - 0.5) * 0.02);
-        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+        const open = lastClose;
+        const close = open * (1 + (Math.random() - 0.5) * 0.02 * volatilityFactor);
+        const high = Math.max(open, close) * (1 + Math.random() * 0.01 * volatilityFactor);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.01 * volatilityFactor);
 
         data.push({
-            time: date.toISOString().split('T')[0],
+            time: currentTime,
             open,
             high,
             low,
@@ -219,13 +234,18 @@ export const generateCandlestickData = (startPrice: number, numPoints = 120): Ca
         });
 
         lastClose = close;
+        currentTime += timeDelta;
     }
     return data;
 };
 
-export const mockCandlestickData: Record<string, CandlestickData[]> = {};
+export const mockCandlestickData: Record<string, Record<string, CandlestickData[]>> = {};
+const timeframes = ['1m', '5m', '15m', '1H', '4H', '1D'];
 mockMarketWatch.forEach(asset => {
-    mockCandlestickData[asset.pair] = generateCandlestickData(asset.price);
+    mockCandlestickData[asset.pair] = {};
+    timeframes.forEach(tf => {
+        mockCandlestickData[asset.pair][tf] = generateCandlestickData(asset.price, 200, tf);
+    });
 });
 
 

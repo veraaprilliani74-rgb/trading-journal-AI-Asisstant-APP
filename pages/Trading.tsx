@@ -3,11 +3,12 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { mockMarketWatch, mockOpenPositions, mockCommunityData, mockTradingGroups, mockPendingOrders, mockAiSignals } from '../data/mockData';
 import { MarketAsset, PriceAlert, OpenPosition, CommunityMember, TradingGroup, PendingOrder, AiSignal, Trade } from '../types';
-import { BellIcon, TrashIcon, XIcon, UsersIcon, CurrencyEur, GoldIcon, BtcIcon, AnalyticsIcon, TelegramIcon, CheckIcon } from '../components/Icons';
+import { BellIcon, TrashIcon, XIcon, UsersIcon, CurrencyEur, GoldIcon, BtcIcon, AnalyticsIcon, TelegramIcon, CheckIcon, FilterIcon } from '../components/Icons';
 import AiSignalCard from '../components/AiSignalCard';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
 import TradingChart from '../components/TradingChart';
+import { mockCandlestickData } from '../data/mockData';
 
 // Price Alert Modal (remains unchanged)
 const PriceAlertModal: React.FC<{
@@ -378,11 +379,90 @@ const HistoryPanel: React.FC<{ trades: Trade[] }> = ({ trades }) => {
 // --- Main Trading Component ---
 type AiSignalSortKey = 'confidence' | 'timestamp';
 
+interface AiSignalFilters {
+    assetTypes: MarketAsset['category'][];
+    minConfidence: number;
+    signalTypes: AiSignal['signal'][];
+}
+
 const SortIcon: React.FC<{ order: 'asc' | 'desc', className?: string }> = ({ order, className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
       {order === 'asc' ? <path d="M18 15l-6-6-6 6"/> : <path d="M6 9l6 6 6-6"/>}
     </svg>
 );
+
+const initialAiSignalFilters: AiSignalFilters = {
+    assetTypes: [],
+    minConfidence: 0,
+    signalTypes: [],
+};
+
+const AiSignalFilterModal: React.FC<{
+    onClose: () => void;
+    currentFilters: AiSignalFilters;
+    onApplyFilters: (filters: AiSignalFilters) => void;
+    onClearFilters: () => void;
+}> = ({ onClose, currentFilters, onApplyFilters, onClearFilters }) => {
+    const [localFilters, setLocalFilters] = useState(currentFilters);
+    const assetTypes: MarketAsset['category'][] = ['FX', 'Commodity', 'Crypto', 'Index'];
+    const signalTypes: AiSignal['signal'][] = ['STRONG BUY', 'BUY', 'SELL', 'STRONG SELL'];
+    
+    const toggleItem = <T,>(array: T[], item: T) => {
+        return array.includes(item) ? array.filter(i => i !== item) : [...array, item];
+    };
+
+    const handleApply = () => {
+        onApplyFilters(localFilters);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4 animate-fade-in">
+            <div className="bg-gray-800 rounded-xl w-full max-w-md flex flex-col shadow-lg">
+                <header className="flex justify-between items-center p-4 border-b border-gray-700">
+                    <h2 className="text-lg font-bold">Filter AI Signals</h2>
+                    <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-700"><XIcon className="w-6 h-6" /></button>
+                </header>
+                <div className="p-4 space-y-6 overflow-y-auto">
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Asset Types</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            {assetTypes.map(type => (
+                                <button key={type} onClick={() => setLocalFilters(prev => ({ ...prev, assetTypes: toggleItem(prev.assetTypes, type) }))} className={`px-3 py-2 text-sm rounded-lg transition-colors ${localFilters.assetTypes.includes(type) ? 'bg-green-600 text-white font-semibold' : 'bg-gray-700 text-gray-300'}`}>
+                                    {type === 'Commodity' ? 'Commodities' : type}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="confidence" className="block text-sm font-semibold text-gray-400 mb-2">
+                            Min. Confidence: <span className="font-bold text-green-400">{localFilters.minConfidence}%</span>
+                        </label>
+                        <input id="confidence" type="range" min="0" max="100" step="5" value={localFilters.minConfidence} onChange={(e) => setLocalFilters(prev => ({ ...prev, minConfidence: parseInt(e.target.value) }))} className="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer range-thumb" />
+                    </div>
+
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-400 mb-2">Signal Types</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            {signalTypes.map(type => (
+                                <button key={type} onClick={() => setLocalFilters(prev => ({ ...prev, signalTypes: toggleItem(prev.signalTypes, type) }))} className={`px-3 py-2 text-sm rounded-lg transition-colors ${localFilters.signalTypes.includes(type) ? 'bg-green-600 text-white font-semibold' : 'bg-gray-700 text-gray-300'}`}>
+                                    {type}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="flex justify-between items-center p-4 border-t border-gray-700">
+                     <button type="button" onClick={onClearFilters} className="px-4 py-2 rounded-lg text-sm text-red-400 hover:bg-red-500/10 font-semibold">Clear Filters</button>
+                    <div className="space-x-3">
+                         <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-500 font-semibold">Cancel</button>
+                        <button type="button" onClick={handleApply} className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 font-semibold">Apply Filters</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 
 const Trading: React.FC = () => {
@@ -394,8 +474,27 @@ const Trading: React.FC = () => {
     const [openPositions, setOpenPositions] = useState<OpenPosition[]>(mockOpenPositions);
     const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>(mockPendingOrders);
     const [aiSignalSortConfig, setAiSignalSortConfig] = useState<{ key: AiSignalSortKey; order: 'asc' | 'desc' }>({ key: 'timestamp', order: 'desc' });
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [aiSignalFilters, setAiSignalFilters] = useState<AiSignalFilters>(initialAiSignalFilters);
+    
+    const hasClosedTrades = useMemo(() => trades.some(t => t.status === 'closed'), [trades]);
+
+    useEffect(() => {
+        if (!hasClosedTrades && activeTab === 'History') {
+            setActiveTab('Trade');
+        }
+    }, [hasClosedTrades, activeTab]);
+    
+    const gridColsClass = hasClosedTrades ? 'grid-cols-6' : 'grid-cols-5';
     
     const instruments = ['All', 'FX', 'Comm', 'Crypto', 'Index'];
+
+    const assetCategoryMap = useMemo(() => {
+        return mockMarketWatch.reduce((acc, asset) => {
+            acc[asset.pair] = asset.category;
+            return acc;
+        }, {} as Record<string, MarketAsset['category']>);
+    }, []);
 
     const filteredAssets = useMemo(() => {
         if (activeInstrument === 'All') return mockMarketWatch;
@@ -415,8 +514,22 @@ const Trading: React.FC = () => {
         return Infinity;
     };
 
-    const sortedAiSignals = useMemo(() => {
-        const sorted = [...mockAiSignals];
+    const sortedAndFilteredAiSignals = useMemo(() => {
+        const filtered = mockAiSignals.filter(signal => {
+            const category = assetCategoryMap[signal.pair];
+            if (aiSignalFilters.assetTypes.length > 0 && (!category || !aiSignalFilters.assetTypes.includes(category))) {
+                return false;
+            }
+            if (signal.confidence < aiSignalFilters.minConfidence) {
+                return false;
+            }
+            if (aiSignalFilters.signalTypes.length > 0 && !aiSignalFilters.signalTypes.includes(signal.signal)) {
+                return false;
+            }
+            return true;
+        });
+
+        const sorted = [...filtered];
         sorted.sort((a, b) => {
             const orderMultiplier = aiSignalSortConfig.order === 'asc' ? 1 : -1;
             if (aiSignalSortConfig.key === 'confidence') {
@@ -428,7 +541,18 @@ const Trading: React.FC = () => {
             return 0;
         });
         return sorted;
-    }, [aiSignalSortConfig]);
+    }, [aiSignalSortConfig, aiSignalFilters, assetCategoryMap]);
+
+    const isFiltersActive = useMemo(() => {
+      return aiSignalFilters.assetTypes.length > 0 ||
+             aiSignalFilters.minConfidence > 0 ||
+             aiSignalFilters.signalTypes.length > 0;
+    }, [aiSignalFilters]);
+
+    const relevantSignalsForChart = useMemo(() => {
+        if (!selectedAsset) return [];
+        return mockAiSignals.filter(signal => signal.pair === selectedAsset.pair);
+    }, [selectedAsset]);
 
     const handleAiSignalSort = (key: AiSignalSortKey) => {
         setAiSignalSortConfig(prev => {
@@ -512,13 +636,15 @@ const Trading: React.FC = () => {
         <p className="text-sm text-gray-400">AI-Powered Multi-Asset Platform</p>
       </div>
 
-      <div className="grid grid-cols-6 bg-gray-800 p-1 rounded-lg text-sm">
+      <div className={`grid ${gridColsClass} bg-gray-800 p-1 rounded-lg text-sm`}>
         <button onClick={() => setActiveTab('Trade')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Trade' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>Trade</button>
         <button onClick={() => setActiveTab('Chart')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Chart' ? 'bg-gray-700 font-semibold' : 'text-gray-400'} disabled:text-gray-600 disabled:cursor-not-allowed`} disabled={!selectedAsset}>Chart</button>
         <button onClick={() => setActiveTab('Order')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Order' ? 'bg-gray-700 font-semibold' : 'text-gray-400'} disabled:text-gray-600 disabled:cursor-not-allowed`} disabled={!selectedAsset}>Order</button>
         <button onClick={() => setActiveTab('AI Signals')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'AI Signals' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>AI&nbsp;Signals</button>
         <button onClick={() => setActiveTab('Community')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Community' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>Community</button>
-        <button onClick={() => setActiveTab('History')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'History' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>History</button>
+        {hasClosedTrades && (
+            <button onClick={() => setActiveTab('History')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'History' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>History</button>
+        )}
       </div>
 
       {activeTab === 'Trade' && (
@@ -580,7 +706,7 @@ const Trading: React.FC = () => {
       )}
 
       {activeTab === 'Chart' && (
-        selectedAsset ? <TradingChart asset={selectedAsset} /> : 
+        selectedAsset ? <TradingChart asset={selectedAsset} signals={relevantSignalsForChart} /> : 
         <div className="text-center py-10 text-gray-500 animate-fade-in">Please select an asset from the 'Trade' tab to view its chart.</div>
       )}
 
@@ -613,12 +739,28 @@ const Trading: React.FC = () => {
                         {aiSignalSortConfig.key === key && <SortIcon order={aiSignalSortConfig.order} />}
                       </button>
                     ))}
+                    <div className="border-l border-gray-700 h-6 mx-1"></div>
+                     <button
+                        onClick={() => setIsFilterModalOpen(true)}
+                        className="flex-1 px-2 py-1.5 rounded-md flex items-center justify-center space-x-1.5 text-sm transition-colors text-gray-400 hover:bg-gray-700/50 relative"
+                    >
+                        <FilterIcon className="w-4 h-4" />
+                        <span>Filter</span>
+                        {isFiltersActive && <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-green-500 ring-2 ring-gray-800"></span>}
+                    </button>
                 </div>
             </div>
             <div className="space-y-3">
-                {sortedAiSignals.map(signal => (
-                    <AiSignalCard key={signal.pair + signal.timestamp} signal={signal} />
-                ))}
+                {sortedAndFilteredAiSignals.length > 0 ? (
+                    sortedAndFilteredAiSignals.map(signal => (
+                        <AiSignalCard key={signal.pair + signal.timestamp} signal={signal} />
+                    ))
+                ) : (
+                    <div className="text-center py-10 text-gray-500 bg-gray-800 rounded-lg">
+                        <p>No AI signals match your criteria.</p>
+                        <p className="text-sm mt-1">Try adjusting your filters.</p>
+                    </div>
+                )}
             </div>
         </div>
       )}
@@ -654,6 +796,20 @@ const Trading: React.FC = () => {
 
     </div>
     {alertModalAsset && <PriceAlertModal asset={alertModalAsset} onClose={() => setAlertModalAsset(null)} onSetAlert={handleSetAlert} />}
+    {isFilterModalOpen && (
+        <AiSignalFilterModal
+            currentFilters={aiSignalFilters}
+            onClose={() => setIsFilterModalOpen(false)}
+            onApplyFilters={(newFilters) => {
+                setAiSignalFilters(newFilters);
+                setIsFilterModalOpen(false);
+            }}
+            onClearFilters={() => {
+                setAiSignalFilters(initialAiSignalFilters);
+                setIsFilterModalOpen(false);
+            }}
+        />
+    )}
     </>
   );
 };

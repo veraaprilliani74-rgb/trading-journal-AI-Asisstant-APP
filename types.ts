@@ -196,7 +196,7 @@ export interface DashboardWidget {
 }
 
 export interface CandlestickData {
-  time: string; // "YYYY-MM-DD"
+  time: number; // UTCTimestamp (seconds)
   open: number;
   high: number;
   low: number;
