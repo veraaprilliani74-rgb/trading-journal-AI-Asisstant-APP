@@ -7,6 +7,7 @@ import { BellIcon, TrashIcon, XIcon, UsersIcon, CurrencyEur, GoldIcon, BtcIcon, 
 import AiSignalCard from '../components/AiSignalCard';
 import { useCurrency } from '../contexts/CurrencyContext';
 import { useUser } from '../contexts/UserContext';
+import TradingChart from '../components/TradingChart';
 
 // Price Alert Modal (remains unchanged)
 const PriceAlertModal: React.FC<{
@@ -440,7 +441,7 @@ const Trading: React.FC = () => {
 
     const handleSelectAsset = (asset: MarketAsset) => {
         setSelectedAsset(asset);
-        setActiveTab('Order');
+        setActiveTab('Chart');
     };
     
     const handleClosePosition = (positionId: string) => {
@@ -511,9 +512,10 @@ const Trading: React.FC = () => {
         <p className="text-sm text-gray-400">AI-Powered Multi-Asset Platform</p>
       </div>
 
-      <div className="grid grid-cols-5 bg-gray-800 p-1 rounded-lg text-sm">
+      <div className="grid grid-cols-6 bg-gray-800 p-1 rounded-lg text-sm">
         <button onClick={() => setActiveTab('Trade')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Trade' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>Trade</button>
-        <button onClick={() => setActiveTab('Order')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Order' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>Order</button>
+        <button onClick={() => setActiveTab('Chart')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Chart' ? 'bg-gray-700 font-semibold' : 'text-gray-400'} disabled:text-gray-600 disabled:cursor-not-allowed`} disabled={!selectedAsset}>Chart</button>
+        <button onClick={() => setActiveTab('Order')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Order' ? 'bg-gray-700 font-semibold' : 'text-gray-400'} disabled:text-gray-600 disabled:cursor-not-allowed`} disabled={!selectedAsset}>Order</button>
         <button onClick={() => setActiveTab('AI Signals')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'AI Signals' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>AI&nbsp;Signals</button>
         <button onClick={() => setActiveTab('Community')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'Community' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>Community</button>
         <button onClick={() => setActiveTab('History')} className={`px-2 py-1 rounded-md transition-colors ${activeTab === 'History' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>History</button>
@@ -575,6 +577,11 @@ const Trading: React.FC = () => {
                 ))}
             </div>
         </div>
+      )}
+
+      {activeTab === 'Chart' && (
+        selectedAsset ? <TradingChart asset={selectedAsset} /> : 
+        <div className="text-center py-10 text-gray-500 animate-fade-in">Please select an asset from the 'Trade' tab to view its chart.</div>
       )}
 
       {activeTab === 'Order' && (

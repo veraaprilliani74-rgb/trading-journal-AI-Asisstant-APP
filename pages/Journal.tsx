@@ -530,9 +530,8 @@ const Journal: React.FC = () => {
           if (filters.type !== 'all' && trade.type !== filters.type) return false;
           if (filters.startDate || filters.endDate) {
             const tradeDate = new Date(trade.date);
-            tradeDate.setUTCHours(0,0,0,0);
-             if (filters.startDate && tradeDate < new Date(filters.startDate)) return false;
-             if (filters.endDate && tradeDate > new Date(filters.endDate)) return false;
+            if (filters.startDate && tradeDate < new Date(filters.startDate)) return false;
+            if (filters.endDate && tradeDate > new Date(filters.endDate)) return false;
           }
           return true;
         });

@@ -1,4 +1,4 @@
-import { User, Trade, MarketAsset, CommunityMember, AiSignal, CommunityPost, TradingGroup, MarketAnalysis, EconomicEvent, OpenPosition, PendingOrder, SystemNotification, SmartNotification, TransactionHistoryItem, SubscriptionPlan, Comment } from '../types';
+import { User, Trade, MarketAsset, CommunityMember, AiSignal, CommunityPost, TradingGroup, MarketAnalysis, EconomicEvent, OpenPosition, PendingOrder, SystemNotification, SmartNotification, TransactionHistoryItem, SubscriptionPlan, Comment, CandlestickData } from '../types';
 import { CurrencyEur, CurrencyGbp, GoldIcon, SilverIcon, OilIcon, BtcIcon, EthIcon, IndexIcon, JournalIcon, AnalyticsIcon, SparklesIcon } from '../components/Icons';
 
 export const mockTrades: Trade[] = [
@@ -196,6 +196,38 @@ mockMarketWatch.forEach(asset => {
     // We use the asset's current data to generate a plausible history
     mockHistoricalData[asset.pair] = generateSparklineData(asset.price, asset.changePercent);
 });
+
+export const generateCandlestickData = (startPrice: number, numPoints = 120): CandlestickData[] => {
+    const data: CandlestickData[] = [];
+    let lastClose = startPrice;
+    const today = new Date();
+
+    for (let i = 0; i < numPoints; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - (numPoints - 1 - i));
+        const open = lastClose * (1 + (Math.random() - 0.5) * 0.01);
+        const close = open * (1 + (Math.random() - 0.5) * 0.02);
+        const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+        const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+
+        data.push({
+            time: date.toISOString().split('T')[0],
+            open,
+            high,
+            low,
+            close,
+        });
+
+        lastClose = close;
+    }
+    return data;
+};
+
+export const mockCandlestickData: Record<string, CandlestickData[]> = {};
+mockMarketWatch.forEach(asset => {
+    mockCandlestickData[asset.pair] = generateCandlestickData(asset.price);
+});
+
 
 export const mockCommunityFeed: CommunityPost[] = [
     {

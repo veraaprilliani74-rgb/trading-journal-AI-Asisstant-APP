@@ -2,9 +2,11 @@ import React, { useState, useMemo } from 'react';
 // Fix: Use namespace import for react-router-dom to handle potential module resolution issues.
 import * as ReactRouterDOM from 'react-router-dom';
 import { mockAiSignals, mockMarketAnalysis, mockEconomicCalendar } from '../data/mockData';
+import { mockNews } from '../data/mockNews';
 import { MarketAnalysis, EconomicEvent } from '../types';
-import { SparklesIcon, CalendarIcon, AnalyticsIcon } from '../components/Icons';
+import { SparklesIcon, CalendarIcon, AnalyticsIcon, NewsIcon } from '../components/Icons';
 import AiSignalCard from '../components/AiSignalCard';
+import NewsCard from '../components/NewsCard';
 import { useUser } from '../contexts/UserContext';
 
 const MarketAnalysisCard: React.FC<{ analysis: MarketAnalysis }> = ({ analysis }) => {
@@ -54,7 +56,7 @@ const EconomicEventRow: React.FC<{ event: EconomicEvent }> = ({ event }) => (
 
 
 const Insights: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('Analysis');
+  const [activeTab, setActiveTab] = useState('News');
   const { user } = useUser();
   const isProOrHigher = user.accountType === 'Pro' || user.accountType === 'Premium';
 
@@ -81,7 +83,11 @@ const Insights: React.FC = () => {
         <p className="text-sm text-gray-400">AI-powered analysis and data</p>
       </div>
 
-       <div className="flex justify-around bg-gray-800 p-1 rounded-lg text-sm">
+       <div className="grid grid-cols-4 bg-gray-800 p-1 rounded-lg text-sm">
+        <button onClick={() => handleTabClick('News')} className={`flex-1 px-3 py-1.5 rounded-md transition-colors flex items-center justify-center space-x-2 ${activeTab === 'News' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>
+            <NewsIcon className="w-4 h-4" />
+            <span>Berita</span>
+        </button>
         <button onClick={() => handleTabClick('Analysis')} className={`flex-1 px-3 py-1.5 rounded-md transition-colors flex items-center justify-center space-x-2 ${activeTab === 'Analysis' ? 'bg-gray-700 font-semibold' : 'text-gray-400'}`}>
             <AnalyticsIcon className="w-4 h-4" />
             <span>Analysis</span>
@@ -98,6 +104,10 @@ const Insights: React.FC = () => {
       </div>
 
       <div className="space-y-4">
+        {activeTab === 'News' && (
+          mockNews.map(newsItem => <NewsCard key={newsItem.id} news={newsItem} />)
+        )}
+
         {activeTab === 'Analysis' && (
             mockMarketAnalysis.map(analysis => <MarketAnalysisCard key={analysis.id} analysis={analysis} />)
         )}

@@ -194,3 +194,21 @@ export interface DashboardWidget {
   id: 'accountSummary' | 'stats' | 'marketWatch' | 'openPositions' | 'aiInsights';
   name: string;
 }
+
+export interface CandlestickData {
+  time: string; // "YYYY-MM-DD"
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface MarketNews {
+  id: string;
+  headline: string;
+  summary: string;
+  source: string;
+  timestamp: string;
+  imageUrl: string;
+  tags: string[];
+}
